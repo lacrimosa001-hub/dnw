@@ -48,20 +48,24 @@
      pc1/pc2: 粒子/汁水的颜色 */
   const ASSET_FILL = 0.92;   // 贴图里主体占画布长边的比例，与生成脚本保持一致
 
+  /* 半径用【递减的等比】而不是固定倍数：17 → 110，相邻比值从 ×1.47 收到 ×1.15。
+     早先用固定的 ×1.30，小级别之间只差 5~7px（17/22/29/38），在手机上
+     34px 和 44px 的圆根本分不出来；而大级别却差 20+px，很浪费。
+     递减比例把「视觉可分辨的差距」优先分配给数量最多的小级别。 */
   const FRUITS = [
     { name: '哭泣', r: 17,  c1: '#d8d8dc', c2: '#8a8a94', line: 'rgba(40,40,48,.45)',
       file: 'assets/fruits/01-cry.webp',      pc1: '#c9cdd6', pc2: '#7f8590' },
-    { name: '惊慌', r: 22,  c1: '#dcdce2', c2: '#8e8e98', line: 'rgba(40,40,48,.45)',
+    { name: '惊慌', r: 25,  c1: '#dcdce2', c2: '#8e8e98', line: 'rgba(40,40,48,.45)',
       file: 'assets/fruits/02-panic.webp',    pc1: '#cfd3dc', pc2: '#848a95' },
-    { name: '无语', r: 29,  c1: '#e0e0e6', c2: '#92929c', line: 'rgba(40,40,48,.45)',
+    { name: '无语', r: 36,  c1: '#e0e0e6', c2: '#92929c', line: 'rgba(40,40,48,.45)',
       file: 'assets/fruits/03-deadpan.webp',  pc1: '#d3d7e0', pc2: '#888e99' },
-    { name: '满足', r: 38,  c1: '#e4e4ea', c2: '#96969f', line: 'rgba(40,40,48,.45)',
+    { name: '满足', r: 49,  c1: '#e4e4ea', c2: '#96969f', line: 'rgba(40,40,48,.45)',
       file: 'assets/fruits/04-content.webp',  pc1: '#d7dbe4', pc2: '#8c929d' },
-    { name: '得意', r: 49,  c1: '#c8464a', c2: '#8c1f24', line: 'rgba(60,10,14,.45)',
+    { name: '得意', r: 63,  c1: '#c8464a', c2: '#8c1f24', line: 'rgba(60,10,14,.45)',
       file: 'assets/fruits/05-smug.webp',     pc1: '#e2707a', pc2: '#a8333d' },
-    { name: '龇牙', r: 64,  c1: '#c24448', c2: '#88191e', line: 'rgba(60,10,14,.45)',
+    { name: '龇牙', r: 79,  c1: '#c24448', c2: '#88191e', line: 'rgba(60,10,14,.45)',
       file: 'assets/fruits/06-grin.webp',     pc1: '#e26c76', pc2: '#a52f39' },
-    { name: '大笑', r: 84,  c1: '#bc4044', c2: '#7e1519', line: 'rgba(60,10,14,.45)',
+    { name: '大笑', r: 96,  c1: '#bc4044', c2: '#7e1519', line: 'rgba(60,10,14,.45)',
       file: 'assets/fruits/07-laugh.webp',    pc1: '#de6872', pc2: '#a02b35' },
     { name: '暴怒', r: 110, c1: '#b83c40', c2: '#741115', line: 'rgba(60,10,14,.5)',
       file: 'assets/fruits/08-rage.webp',     pc1: '#ffcf6a', pc2: '#d99a24' }

@@ -12,7 +12,7 @@
  * ============================================================ */
 'use strict';
 
-const CACHE = 'dnw-2dcc3e8a8d';
+const CACHE = 'dnw-694daaa621';
 
 const SHELL = [
   './',
