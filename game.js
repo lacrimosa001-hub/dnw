@@ -159,11 +159,34 @@
       return this.ctx;
     },
 
+    /* 发声入口。上下文没跑起来时不能在原地硬发 —— 见下面 _play 的说明。 */
     tone(freq, freq2, dur, vol, type) {
       if (this.muted) return;
       const c = this.ensure();
       if (!c) return;
-      if (c.state === 'suspended') c.resume();
+
+      /* 移动端常见情形：页面加载时建的 AudioContext 是 suspended 的，
+         第一次手势才 resume()，而它返回的是 Promise。
+         如果这时直接排振荡器，等 resolve 时这一声早被丢了 ——
+         表现就是「第一次点击（投放）没有声音」。所以等上下文真跑起来再发。 */
+      if (c.state !== 'running') {
+        let fired = false;
+        const fire = () => {
+          if (fired || this.muted) return;
+          fired = true;
+          this._play(c, freq, freq2, dur, vol, type);
+        };
+        const pr = c.resume();
+        if (pr && pr.then) pr.then(fire, fire);
+        /* resume() 万一一直不 resolve（个别浏览器），兜一手定时器 */
+        setTimeout(fire, 150);
+        return;
+      }
+      this._play(c, freq, freq2, dur, vol, type);
+    },
+
+    /* 真正排一个音。调用前必须保证 c.state === 'running'。 */
+    _play(c, freq, freq2, dur, vol, type) {
       const t = c.currentTime;
       const osc = c.createOscillator();
       const gain = c.createGain();
@@ -265,8 +288,8 @@
        所以被当成「没有投放音效」。改成高频短音 + 低频垫底的两层，
        音量抬到听得见但不吵：一层出「嗒」的质感，一层给厚度。 */
     drop() {
-      this.tone(560, 300, 0.055, 0.11, 'triangle');
-      this.tone(180, 120, 0.09,  0.08, 'sine');
+      this.tone(560, 300, 0.055, 0.18, 'triangle');
+      this.tone(180, 120, 0.09,  0.13, 'sine');
     },
     over()   { this.tone(420, 90, 0.7, 0.16, 'sawtooth'); },
     bonus()  { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this.tone(f, f, 0.22, 0.12, 'triangle'), i * 90)); }
