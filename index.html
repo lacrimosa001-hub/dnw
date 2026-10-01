@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2f323d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="合成大W">
+<meta name="description" content="合成大W · 纯前端小游戏：拖动瞄准、松手投放，相同的 W 撞在一起合成更暴躁的一只。">
+
+<!-- PWA：装到主屏幕后全屏打开、离线可玩 -->
+<!-- 文件名用 .json 而不是 .webmanifest —— 不是所有静态托管都会给 .webmanifest 发对的 MIME -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="icon" href="assets/icons/icon-192.png">
+
+<title>合成大W</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main class="app">
+
+  <!-- ===== 游戏区 ===== -->
+  <section class="stage" id="stage">
+    <canvas id="game" aria-label="合成大W游戏区域"></canvas>
+
+    <div class="overlay" id="overlay">
+      <div class="dialog">
+        <div class="dialog-emoji">💥</div>
+        <h2 id="overTitle">游戏结束</h2>
+        <p class="dialog-score">本局得分 <strong id="finalScore">0</strong></p>
+        <p class="dialog-best">最高分 <span id="finalBest">0</span></p>
+
+        <div class="dialog-actions">
+          <button class="btn btn-primary" id="restartBtn" type="button">再来一局</button>
+        </div>
+        <p class="dialog-hint">按 R 键也可重新开始</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 侧边面板 ===== -->
+  <aside class="panel">
+
+    <header class="panel-head">
+      <h1>合成大W</h1>
+      <p class="subtitle">相同的撞在一起，越合越暴躁</p>
+    </header>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">分数</span>
+        <strong class="stat-value" id="score">0</strong>
+      </div>
+      <div class="stat">
+        <span class="stat-label">最高分</span>
+        <strong class="stat-value stat-best" id="best">0</strong>
+      </div>
+    </div>
+
+    <div class="next-box">
+      <span class="box-label">下一个</span>
+      <canvas id="next" width="160" height="160" aria-label="下一个"></canvas>
+    </div>
+
+    <div class="chain-box">
+      <span class="box-label">合成表</span>
+      <canvas id="chain" width="608" height="128" aria-label="合成顺序"></canvas>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="soundBtn" type="button" aria-pressed="true">
+        <span class="ico">🔊</span><span class="lbl">音效开</span>
+      </button>
+      <button class="btn btn-primary" id="resetBtn" type="button" title="重新开始">
+        <span class="ico">↻</span><span class="lbl">重开</span>
+      </button>
+    </div>
+
+    <p class="tips">
+      鼠标：移动瞄准、点击投放；触屏：拖动瞄准、松手投放。<br>
+      ← → 微调位置，空格投放，R 重开。<br>
+      8 级情绪链：哭泣 → 惊慌 → 无语 → 满足 → 得意 → 龇牙 → 大笑 → 暴怒
+    </p>
+
+  </aside>
+
+</main>
+
+<!-- 碰撞形状数据（按贴图轮廓自动生成，由 tools/build_parts.py 产出） -->
+<script src="assets/fruits/parts.js"></script>
+<script src="game.js"></script>
+
+<script>
+/* 注册 Service Worker（离线缓存）。
+   只在 http(s) 下有意义 —— 双击 index.html 走的是 file://，
+   浏览器不允许 file:// 注册 SW，这里直接跳过，不影响本地玩。 */
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function (err) {
+      if (window.console) console.warn('[合成大W] Service Worker 注册失败（不影响游玩）：' + err.message);
+    });
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,506 @@
+/* ============================================================
+   合成大W · 样式表
+   ============================================================ */
+
+:root {
+  --ink:        #e8eaf2;
+  --ink-soft:   #9aa0b4;
+  --cream:      #22242c;
+  --brand:      #e2504f;
+  --brand-dark: #b83a39;
+  --card:       rgba(42, 45, 56, .78);
+  --shadow:     0 18px 50px rgba(0, 0, 0, .45);
+
+  /* 手机浏览器地址栏会吃掉 vh，dvh 更准；不支持的浏览器自动退回 vh */
+  --vh:         100vh;
+  --safe-t:     env(safe-area-inset-top, 0px);
+  --safe-b:     env(safe-area-inset-bottom, 0px);
+  --safe-l:     env(safe-area-inset-left, 0px);
+  --safe-r:     env(safe-area-inset-right, 0px);
+}
+
+@supports (height: 100dvh) {
+  :root { --vh: 100dvh; }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;   /* 禁掉下拉刷新 / 橡皮筋 */
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  color: var(--ink);
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+               system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(1200px 700px at 8% -12%,  #3d3348 0%, transparent 60%),
+    radial-gradient(900px 600px at 104% -6%,  #24384a 0%, transparent 55%),
+    radial-gradient(1000px 780px at 50% 118%, #452b34 0%, transparent 62%),
+    #1c1d23;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  touch-action: manipulation;          /* 干掉双击缩放 */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ---------------- 布局 ---------------- */
+
+.app {
+  display: flex;
+  align-items: stretch;
+  gap: 20px;
+  max-height: 100%;
+}
+
+/* ---------------- 游戏区 ---------------- */
+
+.stage {
+  position: relative;
+  height: min(86vh, 700px);
+  aspect-ratio: 420 / 700;
+  flex: 0 0 auto;
+  border-radius: 24px;
+  background: #2a2c35;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  box-shadow:
+    0 26px 64px rgba(0, 0, 0, .60),
+    0 0 0 1px rgba(160, 170, 200, .18) inset,
+    0 0 0 6px rgba(90, 98, 120, .22);
+}
+
+.stage:active { cursor: grabbing; }
+
+#game {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------------- 结束遮罩 ---------------- */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(8, 10, 16, .62);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .28s ease;
+}
+
+.overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.dialog {
+  width: 100%;
+  padding: 26px 22px;
+  border-radius: 22px;
+  text-align: center;
+  background: rgba(38, 41, 50, .97);
+  box-shadow: 0 20px 46px rgba(0, 0, 0, .55);
+  transform: translateY(14px) scale(.96);
+  transition: transform .32s cubic-bezier(.2, .9, .3, 1.4);
+}
+
+.overlay.show .dialog { transform: none; }
+
+.dialog-emoji {
+  font-size: 46px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.dialog h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  letter-spacing: .06em;
+}
+
+.dialog-score {
+  margin: 0 0 4px;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.dialog-score strong {
+  font-size: 30px;
+  color: var(--brand);
+  font-variant-numeric: tabular-nums;
+}
+
+.dialog-best {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.dialog-hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+/* ---------------- 侧边面板 ---------------- */
+
+.panel {
+  width: min(312px, 86vw);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, .8);
+  background: var(--card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+}
+
+.panel-head h1 {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: .04em;
+  background: linear-gradient(100deg, #dfe3ee, #e2504f 55%, #7c1d1d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat {
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .07);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07);
+}
+
+.stat-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: .12em;
+  color: var(--ink-soft);
+}
+
+.stat-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 26px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-best { color: #f0b64a; }
+
+.stat-value.bump { animation: bump .32s ease; }
+
+@keyframes bump {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.22); color: var(--brand); }
+  100% { transform: scale(1); }
+}
+
+/* 下一个 / 合成表 */
+
+.box-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  letter-spacing: .12em;
+  color: var(--ink-soft);
+}
+
+.next-box,
+.chain-box {
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .07);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07);
+}
+
+#next {
+  display: block;
+  width: 76px;
+  height: 76px;
+  margin: 2px auto 0;
+}
+
+#chain {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* 按钮 */
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn {
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .09);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .28);
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background .2s ease;
+}
+
+.btn .ico { margin-right: 4px; }
+
+.btn:hover  { transform: translateY(-1px); background: rgba(255, 255, 255, .15); box-shadow: 0 10px 22px rgba(0, 0, 0, .38); }
+.btn:active { transform: translateY(1px) scale(.985); }
+
+.btn:disabled { opacity: .55; cursor: default; transform: none; }
+
+.btn-wide { grid-column: 1 / -1; }
+
+.btn-primary {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #f2726a, var(--brand) 55%, var(--brand-dark));
+}
+
+.dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ---------------- 参数提示 ---------------- */
+
+.tips {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.7;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+/* ============================================================
+   响应式：手机 / 竖屏窄屏
+   思路：面板拆成「顶部信息条」——把 .panel 提到棋盘上方并横向压扁，
+   只留分数 + 按钮；棋盘按剩余高度和 96vw 取小值，永远不出现滚动条。
+   ============================================================ */
+
+@media (max-width: 860px) {
+  :root { --topbar: 68px; }   /* 顶部信息条 + 间隙的大致占高 */
+
+  body {
+    padding: calc(8px + var(--safe-t)) calc(8px + var(--safe-r))
+             calc(8px + var(--safe-b)) calc(8px + var(--safe-l));
+  }
+
+  .app {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;   /* 信息条钉在顶上 */
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+  }
+
+  /* 面板是 DOM 里靠后的，用 order 提到棋盘上面 */
+  .panel { order: -1; }
+
+  /* 棋盘：高度取「剩余可用高度」与「96vw 按比例换算的高度」中较小的一个，
+     宽度由 aspect-ratio 反推，保证不拉伸、不溢出；
+     margin:auto 让它在剩下的空间里垂直居中 */
+  .stage {
+    margin: auto 0;
+    height: min(calc(var(--vh) - var(--topbar) - 28px - var(--safe-t) - var(--safe-b)),
+                calc(96vw * 700 / 420));
+    width: auto;
+    max-height: none;
+    border-radius: 20px;
+  }
+
+  /* ---- 顶部信息条 ---- */
+  .panel {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    max-width: calc(96vw * 700 / 420);
+    padding: 8px 10px;
+    border-radius: 18px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .panel-head,
+  .next-box,
+  .chain-box,
+  .tips { display: none; }
+
+  .stats {
+    flex: 1 1 auto;
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .stat {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .09);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+  }
+
+  .stat-label { font-size: 10px; letter-spacing: .08em; }
+
+  .stat-value {
+    margin-top: 0;
+    font-size: 20px;
+    line-height: 1.15;
+  }
+
+  .actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 6px;
+  }
+
+  /* 触摸目标够大，别让人点不中 */
+  .btn {
+    min-height: 46px;
+    padding: 0 12px;
+    font-size: 14px;
+    border-radius: 13px;
+    white-space: nowrap;
+  }
+
+  /* 手机上「音效」只留图标，把横向空间让给分数 */
+  #soundBtn .lbl { display: none; }
+
+  #soundBtn {
+    min-width: 46px;
+    padding: 0 10px;
+    font-size: 17px;
+  }
+
+  #soundBtn .ico { margin-right: 0; }
+
+  /* ---- 结束弹窗 ---- */
+  .overlay { padding: 14px; }
+
+  .dialog {
+    padding: 20px 16px;
+    border-radius: 20px;
+    max-height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dialog-emoji { font-size: 34px; }
+
+  .dialog h2 { font-size: 21px; margin-bottom: 8px; }
+
+  .dialog-score strong { font-size: 26px; }
+
+  .dialog .btn { width: 100%; min-height: 48px; }
+
+  .dialog-hint { font-size: 11px; }
+}
+
+/* 手机横屏 / 矮屏：回到左右布局，棋盘吃满高度 */
+@media (max-width: 860px) and (orientation: landscape) {
+  .app {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .panel {
+    order: 0;
+    flex-direction: column;
+    width: min(230px, 30vw);
+    max-width: none;
+    padding: 10px;
+  }
+
+  .stats { flex-direction: column; flex: 0 0 auto; }
+
+  .actions { flex-direction: column; }
+
+  .stage {
+    height: calc(var(--vh) - 16px - var(--safe-t) - var(--safe-b));
+    width: auto;
+  }
+
+  .stat-value { font-size: 18px; }
+}
+
+/* 小屏手机（iPhone SE 等 375 以下）：再压一档，保证一行放得下 */
+@media (max-width: 380px) {
+  .panel { padding: 6px 8px; gap: 6px; }
+
+  .stats { gap: 6px; }
+
+  .stat { padding: 5px 8px; }
+
+  .stat-value { font-size: 17px; }
+
+  .stat-label { font-size: 9px; }
+
+  .btn { min-height: 44px; padding: 0 10px; font-size: 13px; }
+
+  #soundBtn { min-width: 42px; font-size: 16px; }
+}
+
+/* 顶部信息条在横屏下是竖排的，恢复成图标 + 文字 */
+@media (max-width: 860px) and (orientation: landscape) {
+  #soundBtn { min-width: 0; padding: 0 10px; font-size: 13px; }
+  #soundBtn .lbl { display: inline; }
+  #soundBtn .ico { margin-right: 4px; }
+}
+
+/* 很矮的横屏（手机横过来且高度不足 430px）：进一步压缩 */
+@media (max-width: 860px) and (orientation: landscape) and (max-height: 430px) {
+  .stat-label { display: none; }
+  .stat { padding: 4px 8px; }
+  .stat-value { font-size: 16px; }
+  .btn { min-height: 40px; padding: 0 10px; font-size: 13px; }
+}
+
+/* 桌面端矮窗口 */
+@media (max-height: 620px) and (min-width: 861px) {
+  .stage { height: 92vh; }
+  .chain-box { display: none; }
+}

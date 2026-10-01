@@ -1,0 +1,16 @@
+{
+  "name": "合成大W",
+  "short_name": "合成大W",
+  "description": "拖动瞄准、松手投放，相同的 W 撞在一起合成更暴躁的一只。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1c1d23",
+  "theme_color": "#2f323d",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
