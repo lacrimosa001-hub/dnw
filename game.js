@@ -40,36 +40,43 @@
   const SQUASH_MAX       = 0.30;  // 最大挤压变形
 
   /* 等级链：索引越大越大
-     file : assets/fruits/ 下的贴图（前 8 项由 tools/normalize_w.py 抠底生成）
-     c1/c2: 贴图缺失时的程序化兜底配色
+     file : assets/fruits/ 下的贴图。运行时加载的是 .webp —— 同样 1024×1024、
+            同样带透明通道，体积只有 PNG 的 1/8（8 张 4.0MB → 474KB）。
+            PNG 还在目录里，但只作为 tools/build_parts.py 生成碰撞形状的输入，
+            部署时被 tools/build_dist.py 排除掉。
+     c1/c2: 贴图缺失/还没加载完时的程序化兜底配色
      pc1/pc2: 粒子/汁水的颜色 */
   const ASSET_FILL = 0.92;   // 贴图里主体占画布长边的比例，与生成脚本保持一致
 
   const FRUITS = [
     { name: '哭泣', r: 17,  c1: '#d8d8dc', c2: '#8a8a94', line: 'rgba(40,40,48,.45)',
-      file: 'assets/fruits/01-cry.png',      pc1: '#c9cdd6', pc2: '#7f8590' },
+      file: 'assets/fruits/01-cry.webp',      pc1: '#c9cdd6', pc2: '#7f8590' },
     { name: '惊慌', r: 22,  c1: '#dcdce2', c2: '#8e8e98', line: 'rgba(40,40,48,.45)',
-      file: 'assets/fruits/02-panic.png',    pc1: '#cfd3dc', pc2: '#848a95' },
+      file: 'assets/fruits/02-panic.webp',    pc1: '#cfd3dc', pc2: '#848a95' },
     { name: '无语', r: 29,  c1: '#e0e0e6', c2: '#92929c', line: 'rgba(40,40,48,.45)',
-      file: 'assets/fruits/03-deadpan.png',  pc1: '#d3d7e0', pc2: '#888e99' },
+      file: 'assets/fruits/03-deadpan.webp',  pc1: '#d3d7e0', pc2: '#888e99' },
     { name: '满足', r: 38,  c1: '#e4e4ea', c2: '#96969f', line: 'rgba(40,40,48,.45)',
-      file: 'assets/fruits/04-content.png',  pc1: '#d7dbe4', pc2: '#8c929d' },
+      file: 'assets/fruits/04-content.webp',  pc1: '#d7dbe4', pc2: '#8c929d' },
     { name: '得意', r: 49,  c1: '#c8464a', c2: '#8c1f24', line: 'rgba(60,10,14,.45)',
-      file: 'assets/fruits/05-smug.png',     pc1: '#e2707a', pc2: '#a8333d' },
+      file: 'assets/fruits/05-smug.webp',     pc1: '#e2707a', pc2: '#a8333d' },
     { name: '龇牙', r: 64,  c1: '#c24448', c2: '#88191e', line: 'rgba(60,10,14,.45)',
-      file: 'assets/fruits/06-grin.png',     pc1: '#e26c76', pc2: '#a52f39' },
+      file: 'assets/fruits/06-grin.webp',     pc1: '#e26c76', pc2: '#a52f39' },
     { name: '大笑', r: 84,  c1: '#bc4044', c2: '#7e1519', line: 'rgba(60,10,14,.45)',
-      file: 'assets/fruits/07-laugh.png',    pc1: '#de6872', pc2: '#a02b35' },
+      file: 'assets/fruits/07-laugh.webp',    pc1: '#de6872', pc2: '#a02b35' },
     { name: '暴怒', r: 110, c1: '#b83c40', c2: '#741115', line: 'rgba(60,10,14,.5)',
-      file: 'assets/fruits/08-rage.png',     pc1: '#ffcf6a', pc2: '#d99a24' }
+      file: 'assets/fruits/08-rage.webp',     pc1: '#ffcf6a', pc2: '#d99a24' }
   ];
 
   /* 合成出 tier 的得分（三角数） */
   const MERGE_SCORE = [0, 1, 3, 6, 10, 15, 21, 28];
 
-  /* 新等级的掉落权重（越小越常见） */
-  const SPAWN_TIERS = [0, 1, 2, 3, 4];
-  const SPAWN_WEIGHTS = [0.28, 0.24, 0.20, 0.16, 0.12];
+  /* 新等级的掉落权重（越小越常见）。
+     只掉前 4 级：早先还允许直接掉 r=49 那一档，盘面很快就被中等果子填满、
+     随便碰碰就合，玩起来太轻松。砍掉最大的可掉落等级之后，
+     想拿到大果子必须老老实实从小往上一层层合。
+     想再难一点就把 3 也去掉，想变回轻松就加回 4。 */
+  const SPAWN_TIERS = [0, 1, 2, 3];
+  const SPAWN_WEIGHTS = [0.30, 0.28, 0.24, 0.18];
 
   const BEST_KEY = 'dnw.best.v1';
   const MUTE_KEY = 'dnw.mute.v1';
@@ -193,6 +200,10 @@
        解法是趁第一次触摸/按键时先把 <audio> 空放一下把它解锁。
        解锁瞬间把音量压到 0，否则用户会听到一声没来由的响。 */
     unlock() {
+      /* WebAudio 的上下文也要在手势里 resume，否则第一次投放/合成的振荡器音是哑的 */
+      const cx = this.ensure();
+      if (cx && cx.state === 'suspended') cx.resume();
+
       if (this._unlocked || this.muted || !this.mergeEl) return;
       const el = this.mergeEl;
       if (el.readyState === 0) return;      // 还没加载好，下次手势再试
@@ -249,7 +260,14 @@
       this.tone(base * 2, base * 3, 0.12, 0.06, 'triangle');
     },
 
-    drop()   { this.tone(180, 120, 0.08, 0.05, 'sine'); },
+    /* 投放（松手那一下）。
+       原来只有 180→120Hz、音量 0.05 的一记闷响，手机上基本听不见，
+       所以被当成「没有投放音效」。改成高频短音 + 低频垫底的两层，
+       音量抬到听得见但不吵：一层出「嗒」的质感，一层给厚度。 */
+    drop() {
+      this.tone(560, 300, 0.055, 0.11, 'triangle');
+      this.tone(180, 120, 0.09,  0.08, 'sine');
+    },
     over()   { this.tone(420, 90, 0.7, 0.16, 'sawtooth'); },
     bonus()  { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this.tone(f, f, 0.22, 0.12, 'triangle'), i * 90)); }
   };
@@ -578,12 +596,12 @@
    * ------------------------------------------------------- */
 
   /* 外发光颜色：tier 3 起逐级变亮，最高级是金色霸气光晕。
-     透明度刻意压得较低 —— 光晕是等级提示，彩色本身已经能区分等级
-     （金 / 橙 / 青 / 金），没必要让它盖住水果轮廓。 */
+     现在用作贴图投影的 shadowColor（见 applyTierGlow），所以是半透明实色，
+     靠 shadowBlur 自己糊开 —— 不再是画一个圆，光晕会贴着角色轮廓走。 */
   const TIER_GLOW = [null, null, null,
-    'rgba(255,238,180,.16)', 'rgba(255,222,140,.20)',
-    'rgba(255,178,96,.24)',  'rgba(150,210,255,.26)',
-    'rgba(255,206,88,.34)'];
+    'rgba(255,238,180,.50)', 'rgba(255,222,140,.55)',
+    'rgba(255,178,96,.60)',  'rgba(150,210,255,.62)',
+    'rgba(255,206,88,.70)'];
 
   function starPath(c, x, y, r, spikes) {
     const n = spikes || 5;
@@ -609,98 +627,123 @@
     c.closePath();
   }
 
-  /* 外发光：必须在贴图【之前】画 —— 贴图会盖住中心，只露出最外圈。
-     半径收在 1.26r：发光是给等级做提醒的，不能盖过「这颗多大」这个主要线索。
-     早先用 1.5r 时，几只挨在一起光晕会糊成一片，反而看不清水果边界。 */
-  const GLOW_R = 1.26;
-
-  function drawTierGlow(c, r, tier) {
+  /* 外发光：不画圆，改成给贴图本体加一圈投影。
+     shadowBlur 是按贴图的 alpha 形状算的，光晕自然贴着角色真实轮廓走
+     （发尖、角、尾巴都在），不会像画一个圆那样把不规则角色包成球。
+     必须在 c.drawImage 之前设好，画完由外层的 c.restore() 收掉。 */
+  function applyTierGlow(c, r, tier) {
     if (tier < 3 || !TIER_GLOW[tier]) return;
-    const g = c.createRadialGradient(0, 0, r * 0.86, 0, 0, r * GLOW_R);
-    g.addColorStop(0, 'rgba(255,255,255,0)');
-    g.addColorStop(1, TIER_GLOW[tier]);
-    c.fillStyle = g;
-    c.beginPath();
-    c.arc(0, 0, r * GLOW_R, 0, Math.PI * 2);
-    c.fill();
+    c.shadowColor = TIER_GLOW[tier];
+    c.shadowBlur = r * 0.55;
   }
 
-  /* 等级装饰：必须在贴图【之后】画
-     —— 星星在头顶、光环在头上方、结晶分列左右、火焰沿轮廓、
-     电弧与霸气射线在轮廓外，全都落在贴图覆盖范围内，先画会被盖掉。 */
+  /* ── 轮廓采样 ──────────────────────────────────────────────
+     装饰一律贴着角色轮廓走，不套圆。
+     shapeOf(tier).parts 是 tools/build_parts.py 从贴图 alpha 描出来的
+     一组内接小圆，本身就是角色的外形。按角度分桶，每桶取「外缘到中心最远」
+     的那个 —— 得到的半径序列就是 W 的轮廓（有发尖的地方就凸出去）。 */
+  function outlineDirs(tier, n) {
+    const parts = shapeOf(tier).parts;
+    const bins = new Array(n).fill(0);
+    for (let i = 0; i < parts.length; i++) {
+      const ox = parts[i][0], oy = parts[i][1], s = parts[i][2];
+      const d = Math.sqrt(ox * ox + oy * oy) + s;      // 单位是 r
+      const k = Math.floor(((Math.atan2(oy, ox) + Math.PI) / (Math.PI * 2)) * n) % n;
+      if (d > bins[k]) bins[k] = d;
+    }
+    /* 空桶用邻居补上，免得轮廓上出现缺口 */
+    for (let pass = 0; pass < 2; pass++) {
+      for (let k = 0; k < n; k++) {
+        if (bins[k] === 0) {
+          const nb = bins[(k + 1) % n] || bins[(k - 1 + n) % n];
+          if (nb) bins[k] = nb;
+        }
+      }
+    }
+    for (let k = 0; k < n; k++) if (bins[k] === 0) bins[k] = 1;
+    return bins;
+  }
+
+  /* 等级装饰：在贴图【之后】画。全部沿轮廓走 ——
+     早先这些都是沿一个圆画的，结果不管角色多不规则，套上去都像个球。 */
   function drawTierDecor(c, r, tier, t) {
     if (tier <= 0) return;
 
-    /* tier 1：头顶 1 颗星；tier 2：2 颗 */
-    if (tier === 1 || tier === 2) {
+    const N = 16;
+    const d = outlineDirs(tier, N);
+    const dirA = (k) => -Math.PI + (k + 0.5) * (Math.PI * 2 / N);
+
+    /* tier 1 / 2：头顶星星（星星本来就飘在头上，不跟轮廓） */
+    if (tier <= 2) {
       c.fillStyle = '#ffe27a';
-      starPath(c, 0, -r * 1.00, r * 0.20, 5);
+      starPath(c, 0, -r * 1.02, r * 0.20, 5);
       c.fill();
       if (tier === 2) {
-        starPath(c, -r * 0.76, -r * 0.70, r * 0.13, 5);
+        starPath(c, -r * 0.78, -r * 0.72, r * 0.13, 5);
         c.fill();
       }
     }
 
-    /* tier 3 起：细金光环 */
-    if (tier >= 3) {
-      c.save();
-      c.strokeStyle = 'rgba(255,210,92,.9)';
-      c.lineWidth = Math.max(1.2, r * 0.05);
-      c.beginPath();
-      c.ellipse(0, -r * 1.04, r * 0.60, r * 0.19, 0, 0, Math.PI * 2);
-      c.stroke();
-      c.restore();
+    /* tier 3：三颗小星，钉在轮廓外侧的三个方向（不是一圈环） */
+    if (tier === 3) {
+      c.fillStyle = '#ffd76a';
+      [[-0.62, -0.90], [0.20, -1.02], [0.92, -0.30]].forEach(([mx, my]) => {
+        starPath(c, mx * r, my * r, r * 0.15, 5);
+        c.fill();
+      });
     }
 
-    /* tier 4 起：两枚红色源石结晶 */
+    /* tier 4：两枚红色源石结晶，贴在轮廓最左 / 最右的那个点上 */
     if (tier >= 4) {
+      const kL = 0, kR = N / 2;                       // 分桶从 -PI 开始，正好是左右
+      const xL = -d[kL] * r * 0.98, xR = d[kR] * r * 0.98;
+      const yL = Math.sin(dirA(kL)) * d[kL] * r;
+      const yR = Math.sin(dirA(kR)) * d[kR] * r;
       c.save();
       c.fillStyle = 'rgba(226,74,74,.92)';
       c.strokeStyle = 'rgba(255,190,190,.85)';
       c.lineWidth = Math.max(0.8, r * 0.02);
-      crystalPath(c, -r * 0.96, -r * 0.26, r * 0.24); c.fill(); c.stroke();
-      crystalPath(c,  r * 0.96, -r * 0.32, r * 0.19); c.fill(); c.stroke();
+      crystalPath(c, xL, yL * 0.4, r * 0.24); c.fill(); c.stroke();
+      crystalPath(c, xR, yR * 0.4 - r * 0.06, r * 0.19); c.fill(); c.stroke();
       c.restore();
     }
 
-    /* tier 5 起：橙色火焰描边（沿圆周转一圈，朝上更旺） */
+    /* tier 5 起：火焰，从轮廓每个方向往外舔（有发尖/角的地方火苗就跟着凸） */
     if (tier >= 5) {
       c.save();
-      c.fillStyle = 'rgba(255,140,50,.80)';
-      const n = 12;
-      for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2;
-        /* 朝上（-PI/2）的火苗最长 */
-        const up = Math.max(0, Math.cos(a + Math.PI / 2));
-        const h = r * (0.13 + 0.20 * up);
-        const bx = Math.cos(a) * r * 1.0, by = Math.sin(a) * r * 1.0;
-        const tx = Math.cos(a) * (r + h), ty = Math.sin(a) * (r + h);
-        const px = Math.cos(a + Math.PI / 2) * r * 0.10;
-        const py = Math.sin(a + Math.PI / 2) * r * 0.10;
+      c.fillStyle = 'rgba(255,140,50,.78)';
+      for (let k = 0; k < N; k++) {
+        const a = dirA(k);
+        const base = d[k] * r;
+        const up = Math.max(0, Math.cos(a + Math.PI / 2));   // 朝上更旺
+        const h = r * (0.09 + 0.22 * up);
+        const bx = Math.cos(a) * base, by = Math.sin(a) * base;
+        const px = Math.cos(a + Math.PI / 2) * r * 0.07;
+        const py = Math.sin(a + Math.PI / 2) * r * 0.07;
+        const mx = Math.cos(a) * (base + h * 0.5), my = Math.sin(a) * (base + h * 0.5);
         c.beginPath();
         c.moveTo(bx - px, by - py);
-        c.quadraticCurveTo(Math.cos(a) * (r + h * 0.5), Math.sin(a) * (r + h * 0.5), tx, ty);
-        c.quadraticCurveTo(Math.cos(a) * (r + h * 0.5), Math.sin(a) * (r + h * 0.5), bx + px, by + py);
+        c.quadraticCurveTo(mx, my, Math.cos(a) * (base + h), Math.sin(a) * (base + h));
+        c.quadraticCurveTo(mx, my, bx + px, by + py);
         c.closePath();
         c.fill();
       }
       c.restore();
     }
 
-    /* tier 6 起：两道青色电弧（随时间抖动） */
+    /* tier 6 起：青色电弧，沿轮廓抖 */
     if (tier >= 6) {
       c.save();
       c.strokeStyle = 'rgba(120,220,255,.85)';
       c.lineWidth = Math.max(1.0, r * 0.035);
       c.lineCap = 'round';
-      for (let k = 0; k < 2; k++) {
-        const base = k ? 2.0 : 0.9;              // 左右各一道
+      for (let k = 4; k < N; k += 6) {                 // 不均匀地挑几段，别绕成一圈
         c.beginPath();
-        for (let i = 0; i <= 5; i++) {
-          const a = base + i * 0.16;
-          const jitter = Math.sin(t * 0.02 + i * 2.1 + k * 3.3) * r * 0.09;
-          const rad = r * (0.94 + jitter / r) + i * r * 0.02;
+        for (let i = 0; i <= 4; i++) {
+          const kk = (k + i) % N;
+          const a = dirA(kk);
+          const jitter = Math.sin(t * 0.02 + i * 2.1 + k) * r * 0.10;
+          const rad = d[kk] * r * 0.96 + jitter;
           const px = Math.cos(a) * rad, py = Math.sin(a) * rad;
           if (i === 0) c.moveTo(px, py); else c.lineTo(px, py);
         }
@@ -709,17 +752,18 @@
       c.restore();
     }
 
-    /* tier 7：金色霸气光晕（一圈放射线，缓慢转动） */
+    /* tier 7：金色霸气射线，从轮廓往外射（长短不一，跟着轮廓起伏） */
     if (tier >= 7) {
       c.save();
-      c.globalAlpha = 0.5 + 0.3 * Math.abs(Math.sin(t * 0.003));
+      c.globalAlpha = 0.45 + 0.3 * Math.abs(Math.sin(t * 0.003));
       c.strokeStyle = 'rgba(255,214,110,.95)';
       c.lineWidth = Math.max(1.4, r * 0.045);
       c.lineCap = 'round';
       const rot = t * 0.0006;
-      for (let i = 0; i < 12; i++) {
-        const a = rot + (i / 12) * Math.PI * 2;
-        const r0 = r * 1.06, r1 = r * (1.20 + 0.05 * Math.sin(t * 0.004 + i));
+      for (let k = 0; k < N; k += 2) {                 // 隔一个方向一根
+        const a = dirA(k) + rot;
+        const r0 = d[k] * r * 1.02;
+        const r1 = d[k] * r * (1.16 + 0.10 * Math.sin(t * 0.004 + k));
         c.beginPath();
         c.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
         c.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
@@ -934,22 +978,24 @@
     if (s !== 1) c.scale(s, s);
     c.rotate(angle || 0);
 
-    /* —— 贴图模式：主体直接画 PNG，画布边长按 ASSET_FILL 换算，保证视觉大小 = 物理直径 —— */
+    /* —— 贴图模式：主体直接画贴图，画布边长按 ASSET_FILL 换算，保证视觉大小 = 物理直径 —— */
     if (f.img) {
       const box = (r * 2) / ASSET_FILL;
       const now = performance.now();
-      /* 发光在下、装饰在上 —— 顺序不能反：
-         星星 / 光环 / 结晶 / 火焰 / 电弧都落在贴图覆盖范围内，先画会被盖掉。
-         两者都在 c.rotate(angle) 之后 → 跟着水果一起滚。 */
-      drawTierGlow(c, r, tier);
+      /* 发光只加在贴图本体那一笔上（shadowBlur 按贴图 alpha 形状算，
+         所以光晕贴着角色轮廓走）；画完立刻清掉，
+         否则后面的装饰也全带上投影，糊成一团。 */
+      applyTierGlow(c, r, tier);
       c.drawImage(f.img, -box / 2, -box / 2, box, box);
+      c.shadowBlur = 0;
+      c.shadowColor = 'transparent';
       drawTierDecor(c, r, tier, now);
       c.restore();
       return;
     }
 
     /* —— 兜底：贴图没加载出来时，画程序化的圆形水果 —— */
-    drawTierGlow(c, r, tier);
+    applyTierGlow(c, r, tier);
     /* 主体 */
     const g = c.createRadialGradient(-r * 0.34, -r * 0.40, r * 0.12, 0, 0, r * 1.12);
     g.addColorStop(0, f.c1);
@@ -958,6 +1004,9 @@
     c.arc(0, 0, r, 0, Math.PI * 2);
     c.fillStyle = g;
     c.fill();
+    /* 光晕只跟着主体那一下，描边 / 高光 / 表情不能再带投影 */
+    c.shadowBlur = 0;
+    c.shadowColor = 'transparent';
 
     /* 描边 */
     c.lineWidth = Math.max(1.4, r * 0.055);

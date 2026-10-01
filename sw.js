@@ -12,7 +12,7 @@
  * ============================================================ */
 'use strict';
 
-const CACHE = 'dnw-v1';
+const CACHE = 'dnw-v2';
 
 const SHELL = [
   './',
@@ -21,14 +21,14 @@ const SHELL = [
   './game.js',
   './manifest.json',
   './assets/fruits/parts.js',
-  './assets/fruits/01-cry.png',
-  './assets/fruits/02-panic.png',
-  './assets/fruits/03-deadpan.png',
-  './assets/fruits/04-content.png',
-  './assets/fruits/05-smug.png',
-  './assets/fruits/06-grin.png',
-  './assets/fruits/07-laugh.png',
-  './assets/fruits/08-rage.png',
+  './assets/fruits/01-cry.webp',
+  './assets/fruits/02-panic.webp',
+  './assets/fruits/03-deadpan.webp',
+  './assets/fruits/04-content.webp',
+  './assets/fruits/05-smug.webp',
+  './assets/fruits/06-grin.webp',
+  './assets/fruits/07-laugh.webp',
+  './assets/fruits/08-rage.webp',
   './assets/merge.mp3',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
